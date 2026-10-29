@@ -299,7 +299,8 @@ export class Chat {
     const { t, host } = this;
     if (!this.open || this.turn) return;
     const status = await host.voiceStatus().catch(() => ({ ok: false }));
-    if (!status.ok) return this.micHint(status);
+    if (!status.ok && !status.local) return this.micHint(status);
+    if (status.local && !status.localAsked && !this.localAsked) return this.localHint();
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -354,6 +355,26 @@ export class Chat {
     const text = String(res.text || '').trim();
     if (!text) return this.interject(t.micEmpty, [], null);
     this.send(text, { voice: true });
+  }
+
+  // No key yet: her own ears on this PC work, but the model is a big download the first time.
+  localHint() {
+    const t = this.t;
+    if (!this.open || this.turn) return;
+    this.interject(t.micLocal, [
+      { id: 'local', label: t.micLocalBtn, primary: true },
+      { id: 'key', label: t.micKeyBtn },
+    ], async (id) => {
+      this.panel.setActions([]);
+      if (id === 'key') {
+        this.panel.hide();
+        return this.onSetupKey?.();
+      }
+      if (id !== 'local') return;
+      this.localAsked = true;
+      await this.host.setConfig({ localAsked: true });
+      this.toggleMic();
+    });
   }
 
   // She can't hear you: no key for it, or no microphone (a panel with what to do).

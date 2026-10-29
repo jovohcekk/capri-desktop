@@ -210,7 +210,9 @@ It takes a model that can read pictures: gemma3 on your PC, Gemini or OpenAI onl
 
 **With your voice.** Next to the text box in her chat, the microphone: she records what you say (30 seconds at most)
 and Whisper writes it down, in her language, with an OpenAI or Groq key (if you don't have one yet, she offers to add
-it). She then answers out loud, and keeps doing it for spoken messages even without ticking tray › **Sound** ›
+it, or to hear you with Whisper on your own PC: free and private, a 240 MB model downloaded the first time, sharp on
+French, English, Spanish, Portuguese and Russian, rough on Uzbek — a key is better there). She then answers out loud,
+and keeps doing it for spoken messages even without ticking tray › **Sound** ›
 **Speak her answers**: that one makes her read every answer, typed or spoken. Her voice comes from the same key
 (OpenAI's; the only one with an Uzbek voice), else Google's free read-aloud (French, English, Spanish, Portuguese,
 Russian), else the voices Windows has for it. The recording is dropped as soon as it's written down.
@@ -419,9 +421,10 @@ it's never kept or sent anywhere.
 When she looks at your screen (only when you ask, or if you ticked *Look at my screen now and then*), a picture of the
 screen goes to her chat's AI: on your PC with Ollama (a local model), to the online service otherwise. It's never written to disk.
 
-If you talk to her through the microphone, the recording goes to OpenAI or Groq to be written down (Whisper), and her
-spoken answers are made by OpenAI, Google's free read-aloud, or a voice on your PC, depending on her language and your
-key. No audio is kept: the recording is dropped once it's text, her answer once it has played.
+If you talk to her through the microphone, the recording goes to OpenAI or Groq to be written down (Whisper) — or, with
+no key, stays on your PC where Whisper runs it locally — and her spoken answers are made by OpenAI, Google's free
+read-aloud, or a voice on your PC, depending on her language and your key. No audio is kept: the recording is dropped
+once it's text, her answer once it has played.
 
 ## Art direction
 

@@ -221,7 +221,9 @@ ton PC, Gemini ou OpenAI en ligne (pas llama3.2, elle te le dit).
 
 **Avec ta voix.** À côté du champ de saisie de son chat, le micro : elle enregistre ce que tu dis (30 secondes au
 plus) et Whisper l'écrit, dans sa langue, avec une clé OpenAI ou Groq (si tu n'en as pas encore, elle te propose d'en
-ajouter une). Elle répond alors à voix haute, et continue pour les messages parlés même sans avoir coché menu ›
+ajouter une, ou de t'entendre avec Whisper sur ton propre PC : gratuit et privé, un modèle de 240 Mo téléchargé la
+première fois, précis en français, anglais, espagnol, portugais et russe, approximatif en ouzbek — une clé vaut mieux
+là). Elle répond alors à voix haute, et continue pour les messages parlés même sans avoir coché menu ›
 **Son** › **Réponses à voix haute** : cette case-là lui fait lire toutes ses réponses, tapées ou parlées. Sa voix
 vient de la même clé (celle d'OpenAI, la seule à avoir une voix ouzbèke), sinon de la lecture gratuite de Google
 (français, anglais, espagnol, portugais, russe), sinon des voix que Windows a pour ça. L'enregistrement est jeté dès
@@ -443,7 +445,8 @@ temps*), une image de l'écran va à l'IA de son chat : sur ton PC avec Ollama (
 ligne sinon. Elle
 n'est jamais écrite sur le disque.
 
-Si tu lui parles au micro, l'enregistrement part chez OpenAI ou Groq pour être écrit (Whisper), et ses réponses à voix
+Si tu lui parles au micro, l'enregistrement part chez OpenAI ou Groq pour être écrit (Whisper) — ou, sans clé, reste
+sur ton PC où Whisper le traite localement — et ses réponses à voix
 haute sont fabriquées par OpenAI, la lecture gratuite de Google, ou une voix de ton PC, selon sa langue et ta clé.
 Aucun son n'est gardé : l'enregistrement est jeté une fois écrit, sa réponse une fois jouée.
 

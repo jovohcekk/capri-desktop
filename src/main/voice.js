@@ -5,6 +5,8 @@
 // the languages it has a voice for, and the Windows voices the renderer falls back to. Keys never
 // leave the main process.
 
+const local = require('./local-stt');
+
 const OPENAI_STT = 'https://api.openai.com/v1/audio/transcriptions';
 const GROQ_STT = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const OPENAI_TTS = 'https://api.openai.com/v1/audio/speech';
@@ -29,7 +31,10 @@ function keys(cfg = {}) {
 function status(cfg = {}) {
   const { openai, groq } = keys(cfg);
   const provider = openai ? 'openai' : groq ? 'groq' : null;
-  return provider ? { ok: true, provider } : { ok: false, code: 'nokey', provider: null };
+  // no key: she still hears, with Whisper running on this machine (local-stt.js)
+  return provider
+    ? { ok: true, provider, local: false }
+    : { ok: false, code: 'nokey', provider: null, local: true, localAsked: Boolean(cfg.localAsked) };
 }
 
 // A key pasted for her ears and voice: checked now, so a typo is said right away (the models list
@@ -57,7 +62,7 @@ async function transcribe(request, cfg = {}) {
   const { openai, groq } = keys(cfg);
   const provider = openai ? 'openai' : groq ? 'groq' : null;
   const key = openai || groq;
-  if (!key) return { ok: false, code: 'nokey', error: 'no API key for speech' };
+  if (!key) return local.transcribe(request); // no key: her own ears, on this machine
   const type = String(mime).split(';')[0];
   const ext = /ogg/.test(type) ? 'ogg' : /mp4|m4a|aac/.test(type) ? 'm4a' : /wav/.test(type) ? 'wav' : 'webm';
   const form = new FormData();
