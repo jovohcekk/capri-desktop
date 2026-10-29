@@ -738,6 +738,43 @@ html[data-motion='reduced'] .panel__bar {
   padding-inline: 10px;
 }
 
+/* your voice: a dot that breathes while she listens, red so it's clear the mic is on */
+.panel__mic {
+  position: relative;
+  padding-inline: 12px 24px;
+}
+
+.panel__mic::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--violet);
+}
+
+.panel__mic.is-listening {
+  background: var(--red);
+  color: var(--paper);
+}
+
+.panel__mic.is-listening::before {
+  background: var(--paper);
+  animation: mic-pulse 900ms ease-in-out infinite;
+}
+
+:root[data-motion='reduced'] .panel__mic.is-listening::before {
+  animation: none;
+}
+
+@keyframes mic-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.6); }
+}
+
 /* it's an AI, and it's not her voice from the show: said on every chat, plainly */
 .panel__note {
   margin: 9px 0 0;

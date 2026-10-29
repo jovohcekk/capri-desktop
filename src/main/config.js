@@ -8,7 +8,8 @@ const DEFAULTS = {
   scale: 0.6,        // sprite scale, 0.6 ≈ 250px tall
   muted: false,
   volume: 0.7,
-  lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en'
+  speak: false,      // she reads her chat answers out loud (a message sent by voice always is)
+  lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en' / 'es' / 'pt' / 'ru' / 'uz'
   displayId: null,   // null = primary display
   wander: true,      // random teleports when idle
   possess: true,     // now and then she dives into the window she sits on and takes it over

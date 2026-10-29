@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
 const {
   app, BrowserWindow, Tray, Menu, ipcMain, screen, protocol, net, shell, globalShortcut, nativeImage,
-  clipboard, ClipboardItem, dialog, powerMonitor, desktopCapturer,
+  clipboard, ClipboardItem, dialog, powerMonitor, desktopCapturer, session,
 } = require('electron');
 const { randomUUID } = require('node:crypto');
 
@@ -17,6 +17,7 @@ const { startWindowWatch } = require('./windows');
 const llm = require('./llm');
 const ollama = require('./ollama');
 const setup = require('./setup');
+const voice = require('./voice');
 const apps = require('./apps');
 const launch = require('./launch');
 const files = require('./files');
@@ -351,6 +352,7 @@ function rebuildTray() {
       label: t.sound,
       submenu: [
         { label: t.mute, type: 'checkbox', checked: cfg.muted, click: (item) => updateConfig({ muted: item.checked }) },
+        { label: t.speak, type: 'checkbox', checked: Boolean(cfg.speak), click: (item) => updateConfig({ speak: item.checked }) },
         { type: 'separator' },
         {
           label: t.soundsDir,
@@ -780,6 +782,21 @@ function registerIpc() {
   });
   ipcMain.handle('chat:memory', () => readMemory().history || []);
   ipcMain.on('chat:remember', (_e, history) => Array.isArray(history) && saveMemory({ history }));
+  // her voice (voice.js): your microphone, through Whisper, and her answers read out loud
+  ipcMain.handle('voice:status', () => voice.status(llmConfig()));
+  ipcMain.handle('voice:transcribe', (_e, request) => voice.transcribe(request || {}, llmConfig()));
+  ipcMain.handle('voice:speak', (_e, request) => voice.speak(request || {}, llmConfig()));
+  // a key for her ears and voice only: saved without moving her chat onto that service
+  ipcMain.handle('voice:setKey', async (_e, { provider, key } = {}) => {
+    if (!['openai', 'groq'].includes(provider)) return { ok: false, error: 'unknown provider' };
+    const clean = String(key || '').trim();
+    if (!clean) return { ok: false, error: 'no key' };
+    const check = await voice.checkKey(provider, clean);
+    if (!check.ok) return check;
+    const before = config.load();
+    updateConfig({ apiKeys: { ...before.apiKeys, [provider]: setup.sealKey(clean) } });
+    return voice.status(llmConfig());
+  });
   ipcMain.on('chat:ollama', () => shell.openExternal(OLLAMA_SITE));
   // setting her up with buttons (setup.js): Ollama and a model, or a key, or an address
   const progress = (payload) => overlay?.webContents.send('setup:progress', payload);
@@ -1028,6 +1045,10 @@ function main() {
 
   app.whenReady().then(() => {
     if (!['codex', 'claude'].includes(config.load().assistant)) config.save({ assistant: activeAssistant().id });
+    // her chat's microphone: the overlay may ask, nothing else in here does
+    const allowed = (permission) => ['media', 'audioCapture', 'microphone'].includes(permission);
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(allowed(permission)));
+    session.defaultSession.setPermissionCheckHandler((_wc, permission) => allowed(permission));
     serveProtocol();
     registerIpc();
     createOverlay();

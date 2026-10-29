@@ -219,6 +219,14 @@ IA sur ton PC, rien ne sort de chez toi ; avec une IA en ligne, l'image part che
 l'image, et son chat se souvient de ce qu'elle a dit un moment. Il faut un modèle qui sait lire les images : gemma3 sur
 ton PC, Gemini ou OpenAI en ligne (pas llama3.2, elle te le dit).
 
+**Avec ta voix.** À côté du champ de saisie de son chat, le micro : elle enregistre ce que tu dis (30 secondes au
+plus) et Whisper l'écrit, dans sa langue, avec une clé OpenAI ou Groq (si tu n'en as pas encore, elle te propose d'en
+ajouter une). Elle répond alors à voix haute, et continue pour les messages parlés même sans avoir coché menu ›
+**Son** › **Réponses à voix haute** : cette case-là lui fait lire toutes ses réponses, tapées ou parlées. Sa voix
+vient de la même clé (celle d'OpenAI, la seule à avoir une voix ouzbèke), sinon de la lecture gratuite de Google
+(français, anglais, espagnol, portugais, russe), sinon des voix que Windows a pour ça. L'enregistrement est jeté dès
+qu'il est écrit.
+
 ### La personnaliser
 
 Clic droit sur elle › **La personnaliser…** (ou « Me personnaliser » dans son guide), un panneau à la fois, et chacun
@@ -272,8 +280,8 @@ Elle n'attrape la souris que sur son corps (au pixel près) : tout le reste de l
   l'autre), modèle IA, se balader, posséder tes fenêtres, jalouse des autres IA, réagir à ton PC, langue, lancement au démarrage, hooks.
   Tout en haut : où vous en êtes, elle et toi.
 
-Elle parle **français, anglais, espagnol, portugais du Brésil et russe**, et choisit toute seule la langue de ton
-système. Tu peux en choisir une autre dans son menu.
+Elle parle **français, anglais, espagnol, portugais du Brésil, russe et ouzbek**, et choisit toute seule la langue de
+ton système. Tu peux en choisir une autre dans son menu.
 
 ## Installation
 
@@ -434,6 +442,10 @@ Quand elle regarde ton écran (seulement si tu le lui demandes, ou si tu as coch
 temps*), une image de l'écran va à l'IA de son chat : sur ton PC avec Ollama (un modèle local), chez le service en
 ligne sinon. Elle
 n'est jamais écrite sur le disque.
+
+Si tu lui parles au micro, l'enregistrement part chez OpenAI ou Groq pour être écrit (Whisper), et ses réponses à voix
+haute sont fabriquées par OpenAI, la lecture gratuite de Google, ou une voix de ton PC, selon sa langue et ta clé.
+Aucun son n'est gardé : l'enregistrement est jeté une fois écrit, sa réponse une fois jouée.
 
 ## Direction artistique
 

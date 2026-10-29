@@ -62,6 +62,7 @@ export class Panel {
     this.chatForm = panel.querySelector('.panel__chat');
     this.chatInput = panel.querySelector('.panel__input');
     this.chatSend = panel.querySelector('.panel__send');
+    this.chatMic = panel.querySelector('.panel__mic');
     this.chatClose = panel.querySelector('.panel__close');
     this.note = panel.querySelector('.panel__note');
     this.chatForm.addEventListener('click', (e) => e.stopPropagation());
@@ -74,6 +75,11 @@ export class Panel {
     });
     this.chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.hide();
+    });
+    this.chatMic.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.chatMic.blur(); // Enter sends your message instead of listening again
+      this.current?.onMic?.();
     });
     this.chatClose.addEventListener('click', () => this.hide());
 
@@ -286,6 +292,13 @@ export class Panel {
     this.chatInput.disabled = false;
     this.chatSend.disabled = false;
     this.chatSend.textContent = chat.send;
+    this.chatMic.hidden = !chat.mic;
+    this.chatMic.disabled = false;
+    this.setMicListening(false);
+    if (chat.mic) {
+      this.chatMic.textContent = chat.mic;
+      this.chatMic.title = chat.mic;
+    }
     this.chatClose.setAttribute('aria-label', chat.close);
     if (chat.note) {
       const tag = document.createElement('b');
@@ -370,7 +383,18 @@ export class Panel {
   setChatBusy(busy) {
     this.chatInput.disabled = busy;
     this.chatSend.disabled = busy;
+    if (this.current?.chat?.mic) this.chatMic.disabled = busy;
     if (!busy && this.current?.chat) this.chatInput.focus();
+  }
+
+  // She's listening to your voice: the button says so, and the line under it too.
+  setMicListening(on) {
+    const chat = this.current?.chat;
+    if (!chat?.mic) return;
+    this.chatMic.classList.toggle('is-listening', on);
+    this.chatMic.textContent = on ? chat.micStop || chat.mic : chat.mic;
+    this.chatMic.setAttribute('aria-pressed', on ? 'true' : 'false');
+    this.chatInput.placeholder = (on && chat.micListening) || chat.placeholder;
   }
 
   // A button of the message on screen says something else now ("Copied").

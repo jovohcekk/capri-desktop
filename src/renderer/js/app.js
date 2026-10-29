@@ -3,6 +3,7 @@ import { FxLayer, GRAB_FRAMES } from './fx.js';
 import { Chip, Mask } from './chip.js';
 import { Panel } from './panel.js';
 import { Voice } from './voice.js';
+import { Speaker } from './speak.js';
 import { Brain } from './brain.js';
 import { Guide } from './guide.js';
 import { Mission } from './mission.js';
@@ -74,6 +75,10 @@ async function boot() {
   const voice = new Voice();
   voice.configure(config);
   host.listSounds().then((list) => list.length && voice.loadCustom(list));
+  // her answers out loud (voice.js in main: OpenAI's voice, then Google's; Windows' own as the last try)
+  const speaker = new Speaker({ host, volume: config.volume });
+  speaker.configure(config);
+  speaker.enabled = Boolean(config.speak);
 
   const panel = new Panel({
     panel: document.getElementById('panel'),
@@ -222,12 +227,14 @@ async function boot() {
   const guide = new Guide({ capri, panel, voice, host, brain });
   // Talking to her (chat.js): "Talk to her" in her menu, or the button when you click her idle.
   const chat = new Chat({ capri, panel, voice, host, brain });
+  chat.speaker = speaker;
   brain.onTalk = () => chat.start();
   // Getting her chat going with buttons (setup.js): Ollama and a model, a key, or an address
   const setup = new Setup({ guide, panel, host, brain, capri, voice });
   guide.setup = setup;
   guide.onTalk = () => chat.start();
   chat.onSetup = (status) => setup.chat(status);
+  chat.onSetupKey = () => setup.voiceKey(); // speaking with her needs a key just for that
   chat.onBetterModel = () => setup.better();
   setup.onReady = () => chat.start();
   // What she calls you, how she is, your lines, what she remembers (custom.js)
@@ -593,6 +600,8 @@ async function boot() {
 
   host.onConfig((cfg) => {
     voice.configure(cfg);
+    speaker.configure(cfg);
+    speaker.enabled = Boolean(cfg.speak);
     jealousy.enabled = cfg.jealous !== false;
     followOn = cfg.follow !== false;
     look.configure(cfg);

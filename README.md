@@ -208,6 +208,13 @@ time, she tells you where the picture goes: to her chat's AI. With an AI on your
 one, the picture goes to that service. She never keeps the picture, and her chat remembers what she said for a while.
 It takes a model that can read pictures: gemma3 on your PC, Gemini or OpenAI online (not llama3.2, she'll tell you).
 
+**With your voice.** Next to the text box in her chat, the microphone: she records what you say (30 seconds at most)
+and Whisper writes it down, in her language, with an OpenAI or Groq key (if you don't have one yet, she offers to add
+it). She then answers out loud, and keeps doing it for spoken messages even without ticking tray › **Sound** ›
+**Speak her answers**: that one makes her read every answer, typed or spoken. Her voice comes from the same key
+(OpenAI's; the only one with an Uzbek voice), else Google's free read-aloud (French, English, Spanish, Portuguese,
+Russian), else the voices Windows has for it. The recording is dropped as soon as it's written down.
+
 ### Make her yours
 
 Right-click her › **Make her yours…** (or "Make me yours" in her guide), one panel at a time, each one skippable:
@@ -257,8 +264,8 @@ She only catches the mouse on her actual body (pixel-precise): the rest of the s
   model, wander, possess your windows, jealous of other AIs, react to my PC, language, start with Windows, hooks. At the very top:
   where you two stand.
 
-She speaks **French, English, Spanish, Brazilian Portuguese and Russian**, and picks the language of your system on her
-own. You can choose another one in her menu.
+She speaks **French, English, Spanish, Brazilian Portuguese, Russian and Uzbek**, and picks the language of your
+system on her own. You can choose another one in her menu.
 
 ## Install
 
@@ -411,6 +418,10 @@ it's never kept or sent anywhere.
 
 When she looks at your screen (only when you ask, or if you ticked *Look at my screen now and then*), a picture of the
 screen goes to her chat's AI: on your PC with Ollama (a local model), to the online service otherwise. It's never written to disk.
+
+If you talk to her through the microphone, the recording goes to OpenAI or Groq to be written down (Whisper), and her
+spoken answers are made by OpenAI, Google's free read-aloud, or a voice on your PC, depending on her language and your
+key. No audio is kept: the recording is dropped once it's text, her answer once it has played.
 
 ## Art direction
 

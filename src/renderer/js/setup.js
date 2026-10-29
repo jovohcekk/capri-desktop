@@ -48,6 +48,44 @@ export class Setup {
     if (ready) this.onReady?.();
   }
 
+  // A key for her ears and her voice only (Whisper, and the answers read out loud): OpenAI or Groq,
+  // without moving her chat onto that service and without needing one of its models.
+  async voiceKey() {
+    let ok = false;
+    await this.guide.scene(async () => {
+      const t = this.t;
+      const id = await this.guide.ask({
+        face: 'look',
+        line: t.voiceKey,
+        quote: t.voiceKeyHow,
+        actions: [{ id: 'openai', label: 'OpenAI', primary: true }, { id: 'groq', label: 'Groq' }, { id: 'back', label: t.back }],
+      });
+      if (!id || id === 'back') return;
+      ok = await this.pasteVoiceKey(id);
+    });
+    if (ok) this.onReady?.();
+  }
+
+  async pasteVoiceKey(provider, error = '') {
+    const t = this.t;
+    const got = await this.guide.askText({
+      face: error ? 'wide' : 'look',
+      line: fmt(t.paste, { name: NAMES[provider] || provider }),
+      quote: error ? `${t.keyBad} ${error}` : t.pasteHow,
+      secret: true,
+      placeholder: t.placeholder,
+      tag: t.keyTag,
+      note: t.keyNote,
+      actions: [{ id: 'page', label: t.where }, { id: 'other', label: t.other }],
+      onAction: (id) => id === 'page' && (this.host.keyPage(provider), true),
+    });
+    if (got?.action === 'other' || !got?.text) return false;
+    this.working(t.checking);
+    const res = await this.host.setVoiceKey(provider, got.text);
+    if (res?.ok) return this.done();
+    return this.pasteVoiceKey(provider, res?.error);
+  }
+
   // A bigger model than the tiny one her chat is on: picked, fetched, and her chat back on it.
   async better() {
     let ready = false;
