@@ -80,12 +80,16 @@ async function transcribe(request, cfg = {}) {
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       const short = (body.match(/"message"\s*:\s*"([^"]+)"/) || [])[1] || `${res.status} ${res.statusText}`;
-      return { ok: false, error: short };
+      console.error(`[capri] ${provider} hearing failed (${short}); listening on this PC instead`);
+      const ears = await local.transcribe(request);
+      return ears.ok ? ears : { ok: false, error: short };
     }
     const data = await res.json();
     return { ok: true, text: String(data.text || '').trim(), provider };
   } catch (err) {
-    return { ok: false, error: err.message };
+    console.error(`[capri] ${provider} hearing failed (${err.message}); listening on this PC instead`);
+    const ears = await local.transcribe(request);
+    return ears.ok ? ears : { ok: false, error: err.message };
   }
 }
 
