@@ -53,6 +53,10 @@ async function checkKey(provider, key) {
 }
 
 // Your voice, as text. request: { audio: base64, mime, lang }
+// The key's service said there's no credit left: her own ears until the key is topped up, not a
+// failed request first on every sentence spoken.
+let skipped = { provider: null, until: 0 };
+
 async function transcribe(request, cfg = {}) {
   const { audio, mime = 'audio/webm', lang = 'fr' } = request;
   if (typeof audio !== 'string' || !audio) return { ok: false, error: 'no audio' };
@@ -63,6 +67,7 @@ async function transcribe(request, cfg = {}) {
   const provider = openai ? 'openai' : groq ? 'groq' : null;
   const key = openai || groq;
   if (!key) return local.transcribe(request); // no key: her own ears, on this machine
+  if (skipped.provider === provider && Date.now() < skipped.until) return local.transcribe(request);
   const type = String(mime).split(';')[0];
   const ext = /ogg/.test(type) ? 'ogg' : /mp4|m4a|aac/.test(type) ? 'm4a' : /wav/.test(type) ? 'wav' : 'webm';
   const form = new FormData();
@@ -81,6 +86,7 @@ async function transcribe(request, cfg = {}) {
       const body = await res.text().catch(() => '');
       const short = (body.match(/"message"\s*:\s*"([^"]+)"/) || [])[1] || `${res.status} ${res.statusText}`;
       console.error(`[capri] ${provider} hearing failed (${short}); listening on this PC instead`);
+      if (res.status === 429 || /credit|quota|billing/i.test(short)) skipped = { provider, until: Date.now() + 15 * 60 * 1000 };
       const ears = await local.transcribe(request);
       return ears.ok ? ears : { ok: false, error: short };
     }
