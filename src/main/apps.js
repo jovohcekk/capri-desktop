@@ -23,12 +23,15 @@ function powershell(script, timeout = 15000) {
 }
 
 // [{ name, process, ids }]: one per program with a window open ("AM Music", "Discord"...)
+let cache = null; // { at, apps }: asking twice in a row (the offer, then the close) starts PowerShell once
 async function list() {
   if (process.platform !== 'win32') return [];
+  if (cache && Date.now() - cache.at < 2000) return cache.apps;
   const out = await powershell(
     'Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle } | '
     + 'ForEach-Object { [pscustomobject]@{ id = $_.Id; name = $_.ProcessName; label = $_.Description } } | '
     + 'ConvertTo-Json -Compress',
+    25000,
   );
   const rows = [].concat(out ? JSON.parse(out) : []);
   const apps = new Map();
@@ -38,7 +41,18 @@ async function list() {
     app.ids.push(id);
     apps.set(name, app);
   }
-  return [...apps.values()];
+  cache = { at: Date.now(), apps: [...apps.values()] };
+  return cache.apps;
+}
+
+// PowerShell can be slow under a heavy CPU (her ears at work): a failed listing gets one more try
+async function listAgain() {
+  try {
+    return await list();
+  } catch {
+    cache = null;
+    return list();
+  }
 }
 
 const simple = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
@@ -47,7 +61,7 @@ const simple = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]
 async function find(wanted) {
   const key = simple(wanted);
   if (key.length < 2) return null;
-  const apps = await list();
+  const apps = await listAgain();
   const score = (app) => {
     const names = [simple(app.name), simple(app.label)].filter(Boolean);
     if (names.includes(key)) return 3;
@@ -62,7 +76,7 @@ async function find(wanted) {
 // Closes it like its close button would; `force` ends it outright (unsaved work is lost).
 // Resolves with what's left: { running } (true when it stayed open, or hid in the tray).
 async function close(name, { force = false } = {}) {
-  const app = (await list()).find((a) => a.process === name);
+  const app = (await listAgain()).find((a) => a.process === name);
   if (!app) return { running: false };
   const ids = app.ids.join(',');
   const out = await powershell(force

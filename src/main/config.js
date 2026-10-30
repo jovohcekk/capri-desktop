@@ -9,6 +9,7 @@ const DEFAULTS = {
   muted: false,
   volume: 0.7,
   speak: false,      // she reads her chat answers out loud (a message sent by voice always is)
+  wake: true,        // the microphone stays open, and her name ("Capri") starts a spoken command
   lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en' / 'es' / 'pt' / 'ru' / 'uz'
   displayId: null,   // null = primary display
   wander: true,      // random teleports when idle

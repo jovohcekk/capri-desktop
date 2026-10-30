@@ -8,6 +8,7 @@ import { Brain } from './brain.js';
 import { Guide } from './guide.js';
 import { Mission } from './mission.js';
 import { Chat } from './chat.js';
+import { Wake } from './wake.js';
 import { Setup } from './setup.js';
 import { Custom } from './custom.js';
 import { Bond, Jealousy } from './bond.js';
@@ -228,6 +229,10 @@ async function boot() {
   // Talking to her (chat.js): "Talk to her" in her menu, or the button when you click her idle.
   const chat = new Chat({ capri, panel, voice, host, brain });
   chat.speaker = speaker;
+  // her name wakes her, hands free: the microphone stays open while this is on
+  const wake = new Wake({ host, chat, speaker });
+  chat.wake = wake;
+  if (config.wake !== false) wake.start().catch(() => {});
   brain.onTalk = () => chat.start();
   // Getting her chat going with buttons (setup.js): Ollama and a model, a key, or an address
   const setup = new Setup({ guide, panel, host, brain, capri, voice });
@@ -508,7 +513,7 @@ async function boot() {
   };
 
   // what's in here, for --dev scripts (debug route `eval`)
-  window.dev = { capri, brain, panel, chat, guide, fx, voice, bond, jealousy, reminders, look, pc, setup, screens: () => screens };
+  window.dev = { capri, brain, panel, chat, wake, guide, fx, voice, bond, jealousy, reminders, look, pc, setup, screens: () => screens };
 
   host.onClaudeEvent((evt) => brain.handle(evt));
   host.onWindows((data) => {
@@ -602,6 +607,8 @@ async function boot() {
     voice.configure(cfg);
     speaker.configure(cfg);
     speaker.enabled = Boolean(cfg.speak);
+    if (cfg.wake === false) wake.stop();
+    else wake.start().catch(() => {});
     jealousy.enabled = cfg.jealous !== false;
     followOn = cfg.follow !== false;
     look.configure(cfg);

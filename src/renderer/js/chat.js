@@ -30,6 +30,15 @@ const CLOSE_TAG = /\[\[\s*close\s*:?\s*([^\]]*)\]\]/i; // [[close: AM Music]] at
 const CLOSE_ASK = /\b(close|shut|quit|kill|exit)|ferm|quitt|coupe|arr[êe]t|cierr|cerra|fech|закр|выключ|yop(?:ing|ish|a|sin)?\b|o[‘ʻ'’]?chir|to[‘ʻ'’]?xtat|tugat/i;
 // her other tags: [[open: Spotify]], [[music: Bad Bunny]], [[media: next]], [[site: youtube.com]]
 const TAG = /\[\[\s*(open|music|media|site)\s*:\s*([^\]]*)\]\]/i;
+// the apps on this PC, as you say them when it isn't English: "закрой блокнот" is Notepad
+const ALIASES = {
+  notepad: ['блокнот', 'блокнотни', 'bloknot', 'bloknotni', 'записная книжка'],
+  telegram: ['телеграм', 'телеграмм', 'telegramm', 'telegramni'],
+  chrome: ['хром', 'браузер', 'brauzer'],
+  windowsterminal: ['терминал', 'terminal'],
+  systemsettings: ['настройки', 'параметры', 'sozlamalar'],
+  code: ['вс код', 'вскод', 'vs code', 'код', 'kod'],
+};
 // "open", "launch", "ouvre", "lance", "abre", "открой", "och"... in any of her languages
 const OPEN_ASK = /\b(open|launch|start|run)\b|ouvr|lance|démarre|abre|abrir|inicia|ejecuta|executa|открой|запусти|(?:^|[\s,.])och(?:ing|ib|ish|a)?\b|ishga tushir|boshla(?:ng|sh|ydi)?\b|yukla/i;
 // what to do with the music playing, said plainly (only when it's about music, or said in a few words)
@@ -412,6 +421,8 @@ export class Chat {
     const asked = this.agent ? null : this.asked(text);
     if (asked?.kind === 'look') return this.sendLook(text, id);
     const early = asked && asked.kind !== 'close' ? this.doNow(asked) : null;
+    // closing one: its button right away, not after her answer (a slow model must not hold it up)
+    if (asked?.kind === 'close') this.offerClose(asked.name);
     this.bond?.heard(text); // "sorry": she lets it go
     await Promise.race([this.appsReady, new Promise((r) => setTimeout(r, 1500))]);
     // what she greeted you with (angry, sulking…), in the conversation before your message, so her
@@ -559,7 +570,7 @@ export class Chat {
     if (video) return { kind: 'youtube', song: songOf(video) };
     const app = this.askedToClose(text);
     if (app) return { kind: 'close', name: app };
-    if (GAME_ASK.test(text) && count <= 8) return { kind: 'open', text };
+    if (GAME_ASK.test(text) && count <= 8) return { kind: 'open', text, names: this.namedApp(text) };
     const start = MUSIC_START.exec(text.trim())?.[1];
     if (start && !HER_PICK.test(start)) return { kind: 'play', song: songOf(start.replace(/[\s.!?]+$/, '')) };
     const both = PLAY_AFTER.exec(text.trim());
@@ -571,7 +582,7 @@ export class Chat {
     const playLast = PLAY_LAST.exec(text.trim())?.[1];
     if (playLast && !/\b(?:och|ochib|oching|yop|yopib|ishga|tushir)\b/i.test(playLast)
       && !VAGUE_SONG.test(playLast) && !HER_PICK.test(playLast)) return { kind: 'play', song: songOf(playLast.replace(/[\s.!?]+$/, '')) };
-    if (OPEN_ASK.test(text) && count <= 14) return { kind: 'open', text };
+    if (OPEN_ASK.test(text) && count <= 14) return { kind: 'open', text, names: this.namedApp(text) };
     return null;
   }
 
@@ -651,7 +662,11 @@ export class Chat {
       if (!first?.line) return then;
       return { line: [first.line, then?.line].filter(Boolean).join('\n'), face: then?.face || first.face };
     }
-    const item = await this.host.findLaunch(asked.text);
+    let item = await this.host.findLaunch(asked.text);
+    for (const name of asked.names || []) {
+      if (item) break;
+      item = await this.host.findLaunch(name);
+    }
     const site = namedSite(asked.text);
     if (site && (!item || BROWSER.test(item.name))) {
       this.zap();
@@ -715,7 +730,8 @@ export class Chat {
     }
     if (done) return this.addLine(answer, done.line, done.face);
     if (asked?.kind === 'remind') return undefined; // no time said: her answer asks when
-    if (asked?.kind === 'close') return this.offerClose(asked.name, answer);
+    // the button was offered when you asked; only an app that wasn't found waits for her answer
+    if (asked?.kind === 'close') return this.panel.current?.actions?.some((a) => a.id === 'close') ? undefined : this.offerClose(asked.name, answer);
     if (asked && asked.kind !== 'open') return undefined; // music that didn't work out: nothing more to offer
     const closeTag = tagged(raw);
     if (closeTag) return wanted('close', text) ? this.offerClose(closeTag, answer) : undefined;
@@ -804,25 +820,43 @@ export class Chat {
     );
   }
 
+  // every way an app might be named here ("блокнот", "bloknotni", "notepad"), the way you said it
+  // first: to find it on a PC whose Start menu isn't in English
+  namedApp(text) {
+    const said = simple(text);
+    let best = null;
+    for (const [name, aliases] of Object.entries(ALIASES)) {
+      for (const alias of [name, ...aliases]) {
+        const word = simple(alias);
+        if (word.length >= 3 && said.includes(word) && (!best || word.length > best.length)) best = { at: word.length, names: [alias, ...aliases, name].filter(Boolean) };
+      }
+    }
+    return best?.names || null;
+  }
+
   // "close am music pls": an app that's open, named in a message asking to close something.
   askedToClose(text) {
     if (!CLOSE_ASK.test(text)) return null;
     const said = simple(text);
     let best = null;
     for (const app of this.apps) {
-      for (const name of [simple(app.name), simple(app.label)]) {
+      // said in your language, not in process names: "закрой блокнот" is Notepad
+      const aliases = (ALIASES[simple(app.name)] || []).map(simple);
+      for (const name of [simple(app.name), simple(app.label), ...aliases]) {
         if (name.length >= 3 && said.includes(name) && (!best || name.length > best.length)) best = { app, length: name.length };
       }
     }
     return best?.app.name || null;
   }
 
-  // She was asked to close an app: a button with its name, and nothing happens until you click it.
-  async offerClose(wanted, answer) {
+  // She was asked to close an app: a button with its name, and nothing happens until you click it
+  // (or say yes). Offered as soon as you ask, before her answer.
+  async offerClose(wanted, answer = null) {
     const { t } = this;
     const app = await this.host.findApp(wanted);
-    if (!this.open || this.turn) return;
+    if (!this.open) return;
     if (!app) {
+      if (answer === null) return; // her answer, come later, says it wasn't found
       this.panel.stream(`${answer}\n${fmt(t.notFound, { app: wanted })}`, { done: true });
       return;
     }

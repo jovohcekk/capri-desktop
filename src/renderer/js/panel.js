@@ -397,6 +397,11 @@ export class Panel {
     this.chatInput.placeholder = (on && chat.micListening) || chat.placeholder;
   }
 
+  // A button of the message on screen, as if it had been clicked (her ears, for a "yes" said out loud).
+  choose(id) {
+    this.actions.querySelector(`[data-id="${id}"]`)?.click();
+  }
+
   // A button of the message on screen says something else now ("Copied").
   relabel(id, label) {
     const button = this.actions.querySelector(`[data-id="${id}"]`);

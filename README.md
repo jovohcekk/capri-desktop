@@ -217,6 +217,12 @@ and keeps doing it for spoken messages even without ticking tray › **Sound** �
 (OpenAI's; the only one with an Uzbek voice), else Google's free read-aloud (French, English, Spanish, Portuguese,
 Russian), else the voices Windows has for it. The recording is dropped as soon as it's written down.
 
+**Hands free.** She keeps an ear on the room: say her name — **“Capri”** — and she answers "Yes, sir. What are we
+doing?", waits for what you ask, and does it: opening and closing the programs you name, the music, a video on YouTube.
+A button she offered (closing Spotify, for instance) is answered out loud too: "yes" presses it, "no" leaves it. No
+click anywhere. Tray › **Sound** › **Listen for “Capri”** turns her ears off (on by default); the microphone only opens
+when the local voice detector hears someone talking, and nothing is kept.
+
 ### Make her yours
 
 Right-click her › **Make her yours…** (or "Make me yours" in her guide), one panel at a time, each one skippable:

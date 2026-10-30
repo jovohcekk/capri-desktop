@@ -353,6 +353,7 @@ function rebuildTray() {
       submenu: [
         { label: t.mute, type: 'checkbox', checked: cfg.muted, click: (item) => updateConfig({ muted: item.checked }) },
         { label: t.speak, type: 'checkbox', checked: Boolean(cfg.speak), click: (item) => updateConfig({ speak: item.checked }) },
+        { label: t.wake, type: 'checkbox', checked: cfg.wake !== false, click: (item) => updateConfig({ wake: item.checked }) },
         { type: 'separator' },
         {
           label: t.soundsDir,
