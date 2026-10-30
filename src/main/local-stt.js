@@ -108,6 +108,7 @@ async function transcribe(request = {}) {
     });
     await busy;
     idle();
+    if (text) console.log(`[capri] heard (${LANGS[lang] || 'english'}): "${text}"`);
     return { ok: true, text, provider: 'local' };
   } catch (err) {
     return { ok: false, code: 'local', error: err.message };

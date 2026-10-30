@@ -59,8 +59,12 @@ export class Wake {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
+      // no microphone yet (permission, another program has it): she tries again while she lives
+      clearTimeout(this.retry);
+      this.retry = setTimeout(() => this.start().catch(() => {}), 20000);
       return false;
     }
+    clearTimeout(this.retry);
     this.ctx = new AudioContext();
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 1024;
@@ -71,6 +75,7 @@ export class Wake {
   }
 
   stop() {
+    clearTimeout(this.retry);
     clearInterval(this.timer);
     this.timer = 0;
     this.stopRecord();
