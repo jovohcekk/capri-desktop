@@ -8,7 +8,7 @@ const DEFAULTS = {
   scale: 0.6,        // sprite scale, 0.6 ≈ 250px tall
   muted: false,
   volume: 0.7,
-  speak: false,      // she reads her chat answers out loud (a message sent by voice always is)
+  speak: true,       // she reads every answer out loud, typed or spoken
   wake: true,        // the microphone stays open, and her name ("Capri") starts a spoken command
   lang: 'auto',      // 'auto' follows the system language, or 'fr' / 'en' / 'es' / 'pt' / 'ru' / 'uz'
   displayId: null,   // null = primary display

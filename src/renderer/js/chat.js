@@ -420,9 +420,7 @@ export class Chat {
     // line about it comes under her answer (Claude Code, answering her chat, does things its own way)
     const asked = this.agent ? null : this.asked(text);
     if (asked?.kind === 'look') return this.sendLook(text, id);
-    const early = asked && asked.kind !== 'close' ? this.doNow(asked) : null;
-    // closing one: its button right away, not after her answer (a slow model must not hold it up)
-    if (asked?.kind === 'close') this.offerClose(asked.name);
+    const early = asked ? this.doNow(asked) : null;
     this.bond?.heard(text); // "sorry": she lets it go
     await Promise.race([this.appsReady, new Promise((r) => setTimeout(r, 1500))]);
     // what she greeted you with (angry, sulking…), in the conversation before your message, so her
@@ -610,6 +608,7 @@ export class Chat {
       this.host.setConfig({ memories: custom.memories });
       return { line: this.brain.t.custom.remembered, face: 'smug' };
     }
+    if (asked.kind === 'close') return this.closeNow(asked.name);
     if (asked.kind === 'media') {
       this.capri.pulse();
       return (await this.host.media(asked.action)) ? { line: t.media[asked.action], face: 'smug' } : null;
@@ -658,7 +657,7 @@ export class Chat {
         ? await this.doNow({ kind: 'open', text: asked.before }) : null;
       // "joue à Brawlhalla" is a game, "lance spotify" an app; anything else, a song
       const game = await this.host.findLaunch(asked.song);
-      const then = game && ['steam', 'epic', 'app', 'file'].includes(game.kind) && !game.risky ? await this.openNow(game) : await this.youtube(asked.song);
+      const then = game && ['steam', 'epic', 'app', 'file'].includes(game.kind) ? await this.openNow(game) : await this.youtube(asked.song);
       if (!first?.line) return then;
       return { line: [first.line, then?.line].filter(Boolean).join('\n'), face: then?.face || first.face };
     }
@@ -676,13 +675,29 @@ export class Chat {
     return this.openNow(item);
   }
 
-  // An app, a game, a file or a folder: opened, or behind a button when it would run something.
+  // An app, a game, a file or a folder: opened right away — what you asked, asked out loud.
   async openNow(item) {
-    if (item.risky) return { offer: item };
     this.zap();
     const res = await this.host.launch(item);
     const name = this.nameOf(item);
     return { line: res.ok ? fmt(this.t.opened, { app: name }) : `${this.t.failed} ${res.error}`, face: res.ok ? 'laugh' : 'aside' };
+  }
+
+  // An app to close: closed now, and if it hid in the tray or asks to save, forced shut — her hands
+  // are your hands here, nothing waits for a button.
+  async closeNow(wanted) {
+    const { t } = this;
+    const app = await this.host.findApp(wanted);
+    if (!app) return { line: fmt(t.notFound, { app: wanted }), face: 'aside' };
+    this.zap();
+    let res = await this.host.closeApp(app.name);
+    let line;
+    if (res.error) line = `${t.failed} ${res.error}`;
+    else if (res.running) {
+      res = await this.host.closeApp(app.name, true);
+      line = res.running ? fmt(t.unkillable, { app: app.name }) : fmt(t.forced, { app: app.name });
+    } else line = fmt(t.closed, { app: app.name });
+    return { line, face: res.running || res.error ? 'aside' : 'laugh' };
   }
 
   // how she calls it: a folder like Downloads in her words, anything else by its name
@@ -714,7 +729,6 @@ export class Chat {
       });
       return undefined;
     }
-    if (done?.offer) return this.launch(done.offer, answer); // it would run something: your click first
     if (done?.files) {
       // what she found (or the screenshot): a button to open the first, and to see where it is
       this.addLine(answer, done.line, done.face);
@@ -730,11 +744,10 @@ export class Chat {
     }
     if (done) return this.addLine(answer, done.line, done.face);
     if (asked?.kind === 'remind') return undefined; // no time said: her answer asks when
-    // the button was offered when you asked; only an app that wasn't found waits for her answer
-    if (asked?.kind === 'close') return this.panel.current?.actions?.some((a) => a.id === 'close') ? undefined : this.offerClose(asked.name, answer);
+    if (asked?.kind === 'close') return undefined; // closed already, while she was answering
     if (asked && asked.kind !== 'open') return undefined; // music that didn't work out: nothing more to offer
     const closeTag = tagged(raw);
-    if (closeTag) return wanted('close', text) ? this.offerClose(closeTag, answer) : undefined;
+    if (closeTag) return wanted('close', text) ? this.closeNow(closeTag) : undefined;
     const tag = TAG.exec(raw);
     if (!tag) return undefined;
     const kind = tag[1].toLowerCase();
@@ -849,56 +862,14 @@ export class Chat {
     return best?.app.name || null;
   }
 
-  // She was asked to close an app: a button with its name, and nothing happens until you click it
-  // (or say yes). Offered as soon as you ask, before her answer.
-  async offerClose(wanted, answer = null) {
-    const { t } = this;
-    const app = await this.host.findApp(wanted);
-    if (!this.open) return;
-    if (!app) {
-      if (answer === null) return; // her answer, come later, says it wasn't found
-      this.panel.stream(`${answer}\n${fmt(t.notFound, { app: wanted })}`, { done: true });
-      return;
-    }
-    this.panel.setActions(
-      [{ id: 'close', label: fmt(t.closeIt, { app: app.name }), primary: true }, { id: 'no', label: t.no }],
-      (id) => (id === 'close' ? this.closeApp(app) : this.panel.setActions([])),
-    );
-  }
-
-  async closeApp(app, force = false) {
-    const { t, capri } = this;
-    this.panel.setActions([]);
-    // a bolt of red lightning off her fingers, at it
-    const h = capri.head();
-    capri.zap(h.x + capri.towardCenter() * 280, h.y - 170);
-    const res = await this.host.closeApp(app.name, force);
-    if (!this.open) return;
-    let line;
-    if (res.error) line = `${t.failed} ${res.error}`;
-    else if (!res.running) line = fmt(force ? t.forced : t.closed, { app: app.name });
-    else line = fmt(force ? t.unkillable : t.stillOpen, { app: app.name });
-    this.panel.setFace(res.running || res.error ? 'aside' : 'laugh');
-    this.panel.stream(line, { done: true });
-    this.remember({ role: 'assistant', content: line });
-    // it hid in the tray, or it's asking you to save something: forcing it is your call
-    if (res.running && !force && !res.error) {
-      this.panel.setActions(
-        [{ id: 'force', label: t.force, primary: true }, { id: 'leave', label: t.leave }],
-        (id) => (id === 'force' ? this.closeApp(app, true) : this.panel.setActions([])),
-      );
-    }
-    this.listApps();
-  }
-
   // What she can do on the PC when you ask (Windows), and nothing else.
   powers() {
     const lines = [
-      'Only when the user asks you to open an app, a game, a file or folder on their desktop, or a folder like Downloads, to play music, to control the music playing, or to open a website: say in a few words that you will, and end your answer with one tag: [[open: NAME]], [[music: ARTIST - SONG]] (it plays on YouTube; if they did not say which song, pick one that fits), [[media: ACTION]] (ACTION: pause, play, next, previous, volup, voldown or mute), or [[site: ADDRESS]]. Some of these get a button to confirm, so never say it is already done. Any other time, write no tag at all: there are no other tags.',
+      'Only when the user asks you to open an app, a game, a file or folder on their desktop, or a folder like Downloads, to play music, to control the music playing, or to open a website: say in a few words that you will, and end your answer with one tag: [[open: NAME]], [[music: ARTIST - SONG]] (it plays on YouTube; if they did not say which song, pick one that fits), [[media: ACTION]] (ACTION: pause, play, next, previous, volup, voldown or mute), or [[site: ADDRESS]]. These things happen as soon as the message arrives, no button waits. Any other time, write no tag at all: there are no other tags.',
     ];
     if (this.apps.length) {
       const open = this.apps.map(({ name, label }) => (label && label !== name ? `${name} (${label})` : name)).join(', ');
-      lines.push(`You can also close an app that's open, only when they ask you to: end your answer with [[close: NAME]], NAME being the exact name from this list (the part before the parentheses). They get a button to confirm it. Apps open right now: ${open}.`);
+      lines.push(`You can also close an app that's open, only when they ask you to: end your answer with [[close: NAME]], NAME being the exact name from this list (the part before the parentheses); it is closed as soon as they ask. Apps open right now: ${open}.`);
     }
     if (this.reminders) {
       lines.push('You keep reminders for the user: when they ask you to remind them of something at a given time, your system sets it from their message as they send it (a line under your answer shows it). Just confirm it in a few words, in character, and never say you can\'t. If they didn\'t say when, ask them when.');
