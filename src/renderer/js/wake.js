@@ -10,6 +10,9 @@ const WAIT_MS = 12000;    // after "Capri", how long she waits for the ask
 const FLOOR = 0.012;      // never quieter than this, however quiet the room gets
 // Whisper's spelling of her name, in the languages she knows
 const WAKE = /(?:^|[^\p{L}])(capri|kapri|kepri|капри|кэпри|кепри|капрі)(?=$|[^\p{L}])/iu;
+// "Capri, ket" / "хватит": she goes quiet and leaves the screen. Whisper often spells Uzbek in
+// Cyrillic, so the same words are there twice.
+const BYE = /^(?:ket|keting|ketsin|yop|yoping|кет|кетинг|кетсин|ёп|ёпинг|йоп|йопинг|хватит|уйди|отойди|закройся|спасибо|пока|до свидания|свободна|отдыхай|enough|stop it|bye|leave|dismiss)[\s.!]*$/i;
 // A button on screen, answered out loud: "yes" clicks the main one, "no" the way out of it.
 const YES = /^(?:да|ага|конечно|давай|ок|окей|хорошо|yes|yeah|yep|yup|sure|ok|okay|oui|ouais|sí|si|claro|sim|ha|xo[‘ʻ'’]?p|xop|mayli|bo[‘ʻ'’]?ladi)$/i;
 const NO = /^(?:нет|неа|no|nope|non|yo[‘ʻ'’]?q|yoq|não|nao)$/i;
@@ -203,6 +206,7 @@ export class Wake {
   }
 
   async wake(rest) {
+    if (rest && BYE.test(rest.trim())) return this.dismiss(); // "Capri, ket" leaves even mid-answer
     if (this.chat.turn) return; // she is already answering: say it after
     if (rest) {
       this.mode = 'idle';
@@ -221,6 +225,7 @@ export class Wake {
     this.chat.interject(t.wakeHi, [], null);
     this.chat.panel.setFace('look');
     this.speaker?.say(t.wakeHi, { lang: this.lang });
+    this.chat.byeSoon();
   }
 
   async again() {
@@ -228,6 +233,13 @@ export class Wake {
     this.until = performance.now() + WAIT_MS;
     if (this.chat.open) this.chat.interject(t.wakeHi, [], null);
     this.speaker?.say(t.wakeHi, { lang: this.lang });
+  }
+
+  // "Capri, ket": the chat goes, she wanders off, the ears stay open for her name.
+  dismiss() {
+    this.mode = 'idle';
+    if (this.chat.open) this.chat.close();
+    this.chat.panel.hide();
   }
 
   async ask(text) {

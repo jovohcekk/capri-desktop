@@ -46,6 +46,7 @@ export class Panel {
     this.tickerVerb = ticker.querySelector('.ticker__verb');
     this.tickerTarget = ticker.querySelector('.ticker__target');
     this.current = null;
+    this.voiceOnly = false; // no text box, no buttons: her words are said, not typed
     this.hideTimer = null;
     this.decodeTimer = null;
     this.anchor = { x: 0, y: 0, side: 1 };
@@ -400,6 +401,14 @@ export class Panel {
   // A button of the message on screen, as if it had been clicked (her ears, for a "yes" said out loud).
   choose(id) {
     this.actions.querySelector(`[data-id="${id}"]`)?.click();
+  }
+
+  // Voice only: the chat's text box, its buttons and her actions disappear (they stay in the page,
+  // so a spoken "yes" still presses them); her line stays as a subtitle.
+  setVoiceOnly(on) {
+    this.voiceOnly = Boolean(on);
+    this.el.classList.toggle('is-voice', this.voiceOnly);
+    this.chatForm?.setAttribute('aria-hidden', String(this.voiceOnly));
   }
 
   // A button of the message on screen says something else now ("Copied").

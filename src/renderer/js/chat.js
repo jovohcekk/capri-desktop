@@ -207,7 +207,7 @@ export class Chat {
   async start() {
     const { capri, host, t } = this;
     if (this.open) {
-      this.panel.chatInput.focus();
+      if (!this.panel.voiceOnly) this.panel.chatInput.focus();
       return;
     }
     if (capri.stowed) {
@@ -253,7 +253,7 @@ export class Chat {
     const moody = !tiny && feeling && t.moody[feeling];
     const hello = moody ? fmt(pick(moody), this.bond.mood.vars) : pick(this.history.length ? t.again : t.hello);
     this.opening = moody ? hello : null;
-    host.focusOverlay(true); // the keyboard, for typing to her
+    if (!this.panel.voiceOnly) host.focusOverlay(true); // the keyboard, for typing to her
     const shown = this.panel.say({
       kind: 'chat',
       face: moody ? MOOD_FACE[feeling] : 'look',
@@ -285,7 +285,7 @@ export class Chat {
       return;
     }
     this.open = true;
-    setTimeout(() => this.panel.chatInput.focus(), 150); // once the overlay has the keyboard
+    if (!this.panel.voiceOnly) setTimeout(() => this.panel.chatInput.focus(), 150); // once the overlay has the keyboard
     capri.perform('hop');
     capri.nextMove = capri.nextGaze = performance.now() + STAY_MS;
   }
@@ -405,6 +405,7 @@ export class Chat {
 
   async send(text, { voice = false } = {}) {
     if (this.turn || !this.open) return;
+    clearTimeout(this.hideTimer); // she stays while you talk to her
     this.voiced = voice;
     this.speaker?.stop();
     const id = Date.now();
@@ -473,6 +474,27 @@ export class Chat {
     if (voice || this.speaker?.enabled) this.speaker?.say(answer, { lang: this.brain.lang });
     if (!this.agent) this.after(res.text, answer, asked, early, text);
     this.listApps(); // fresh for the next message
+    this.byeSoon();
+  }
+
+  // Voice only: once she has answered and stopped talking, the panel fades on its own — no click
+  // needed (a question she asked with buttons keeps it up until it's answered).
+  byeSoon() {
+    clearTimeout(this.hideTimer);
+    if (!this.panel.voiceOnly) return;
+    const wait = () => {
+      if (this.turn || this.mic || this.speaker?.speaking || this.wake?.mode === 'ask') {
+        this.hideTimer = setTimeout(wait, 800);
+        return;
+      }
+      this.hideTimer = setTimeout(() => {
+        if (this.turn || this.mic || this.speaker?.speaking) return wait();
+        if (this.panel.current?.actions?.length) return wait(); // a question answerable out loud
+        this.panel.hide();
+        this.close();
+      }, 3500);
+    };
+    wait();
   }
 
   // "Look at my screen" in her chat: she looks (asking you first, the first time) and answers here,

@@ -903,3 +903,9 @@ html[data-motion='reduced'] .panel__line.is-glitching,
 html[data-motion='reduced'] .panel[data-kind='alert'] .panel__state {
   animation: none !important;
 }
+
+/* Voice only: no text box, no clickable buttons; her line is a subtitle. */
+.panel.is-voice .panel__chat,
+.panel.is-voice .panel__actions {
+  display: none !important;
+}

@@ -86,6 +86,7 @@ async function boot() {
     ticker: document.getElementById('ticker'),
     labels: linesFor(config.lang, config.assistant),
   });
+  panel.setVoiceOnly(config.voiceOnly !== false); // no text box, no buttons: she listens and speaks
 
   const capri = new Capri({
     root: document.getElementById('capri'),
@@ -609,6 +610,7 @@ async function boot() {
     speaker.enabled = Boolean(cfg.speak);
     if (cfg.wake === false) wake.stop();
     else wake.start().catch(() => {});
+    panel.setVoiceOnly(cfg.voiceOnly !== false);
     jealousy.enabled = cfg.jealous !== false;
     followOn = cfg.follow !== false;
     look.configure(cfg);
